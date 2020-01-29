@@ -36,6 +36,12 @@ class ConfirmationController @Inject()(
                                       )(implicit ec: ExecutionContext) extends FrontendBaseController with I18nSupport {
 
 
+  private def formatForDisplay(tvn: String) = {
+    tvn.zipWithIndex
+      .map(x => if (Seq(1,4,7,10).contains(x._2)) s"${x._1} " else x._1)
+      .mkString("")
+  }
+
   def onPageLoad() = actions.verifiedForUtr {
     implicit request =>
 
@@ -44,6 +50,6 @@ class ConfirmationController @Inject()(
 
       val tvn = request.userAnswers.get(TVNPage).getOrElse("")
 
-      Ok(view(tvn, isAgent, agentOverviewUrl = "#"))
+      Ok(view(formatForDisplay(tvn), isAgent, agentOverviewUrl = "#"))
   }
 }
