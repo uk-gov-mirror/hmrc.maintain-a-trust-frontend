@@ -36,10 +36,17 @@ class ConfirmationController @Inject()(
                                       )(implicit ec: ExecutionContext) extends FrontendBaseController with I18nSupport {
 
 
-  private def formatForDisplay(tvn: String) = {
-    tvn.zipWithIndex
-      .map(x => if (Seq(1,4,7,10).contains(x._2)) s"${x._1} " else x._1)
-      .mkString("")
+  private def formatTvnForDisplay(tvn: String) = {
+    def spaceOutInGroups(input: String, cur: String, groupSizes: Seq[Int]): String = {
+      if (groupSizes.isEmpty) {
+        cur + input
+      }
+      else {
+        spaceOutInGroups(input.drop(groupSizes.head), cur + " " + input.take(groupSizes.head), groupSizes.tail)
+      }
+    }
+
+    spaceOutInGroups(tvn, "", Seq(2,3,3))
   }
 
   def onPageLoad() = actions.verifiedForUtr {
@@ -50,6 +57,6 @@ class ConfirmationController @Inject()(
 
       val tvn = request.userAnswers.get(TVNPage).getOrElse("")
 
-      Ok(view(formatForDisplay(tvn), isAgent, agentOverviewUrl = "#"))
+      Ok(view(formatTvnForDisplay(tvn), isAgent, agentOverviewUrl = "#"))
   }
 }
