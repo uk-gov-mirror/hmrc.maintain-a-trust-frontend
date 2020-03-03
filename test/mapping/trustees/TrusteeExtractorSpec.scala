@@ -174,7 +174,7 @@ class TrusteeExtractorSpec extends FreeSpec with MustMatchers
             )
             )),
             Some(List(DisplayTrustTrusteeType(None, Some(DisplayTrustTrusteeOrgType(
-              lineNo = s"1",
+              lineNo = Some(s"1"),
               bpMatchStatus = Some("01"),
               name = s"Trustee Company 1",
               phoneNumber = None,
