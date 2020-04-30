@@ -18,6 +18,7 @@ package connectors
 
 import config.FrontendAppConfig
 import javax.inject.Inject
+import models.AllSettlors
 import models.http.{DeclarationResponse, TrustsResponse, TrustsStatusReads}
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -30,12 +31,18 @@ class TrustConnector @Inject()(http: HttpClient, config : FrontendAppConfig) {
   def playbackUrl(utr: String) = s"${config.trustsUrl}/trusts/$utr/transformed"
   def playbackFromEtmpUrl(utr: String) = s"${config.trustsUrl}/trusts/$utr/refresh"
 
+  def allSettlorsUrl(utr: String) = s"${config.trustsUrl}/trusts/$utr/transformed/settlors"
+
   def playback(utr: String)(implicit hc: HeaderCarrier, ec : ExecutionContext): Future[TrustsResponse] = {
     http.GET[TrustsResponse](playbackUrl(utr))(TrustsStatusReads.httpReads, hc, ec)
   }
 
   def playbackfromEtmp(utr: String)(implicit hc: HeaderCarrier, ec : ExecutionContext): Future[TrustsResponse] = {
     http.GET[TrustsResponse](playbackFromEtmpUrl(utr))(TrustsStatusReads.httpReads, hc, ec)
+  }
+
+  def allSettlors(utr: String)(implicit hc: HeaderCarrier, ec : ExecutionContext) : Future[AllSettlors] = {
+    http.GET[AllSettlors](allSettlorsUrl(utr))
   }
 
   def declareUrl(utr: String) = s"${config.trustsUrl}/trusts/declare/$utr"

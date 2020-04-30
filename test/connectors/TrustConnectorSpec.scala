@@ -21,6 +21,7 @@ import java.time.LocalDate
 import base.SpecBaseHelpers
 import com.github.tomakehurst.wiremock.client.WireMock._
 import generators.Generators
+import models.AllSettlors
 import models.http.DeclarationResponse.InternalServerError
 import models.http._
 import org.scalatest.concurrent.ScalaFutures
@@ -40,8 +41,62 @@ class TrustConnectorSpec extends FreeSpec with MustMatchers
 
   private def playbackUrl(utr: String) : String = s"/trusts/$utr/transformed"
   private def declareUrl(utr: String) : String = s"/trusts/declare/$utr"
+  private def allSettlorsUrl(utr: String) : String = s"/trusts/$utr/transformed/settlors"
 
   "TrustConnector" - {
+
+    "all settlors must" - {
+
+      "return composition of transformed settlors" in {
+
+        val application = applicationBuilder()
+          .configure(
+            Seq(
+              "microservice.services.trusts.port" -> server.port(),
+              "auditing.enabled" -> false
+            ): _*
+          ).build()
+
+        val connector = application.injector.instanceOf[TrustConnector]
+
+        val utr = "10000000008"
+
+        server.stubFor(
+          get(urlEqualTo(allSettlorsUrl(utr)))
+            .willReturn(
+              aResponse()
+                .withStatus(Status.OK)
+                .withBody("""{
+                            |
+                            |  "settlors": [
+                            |   {"field": "value1"}
+                            |  ],
+                            |  "settlorsCompany": [
+                            |   {"field": "value2"}
+                            |  ],
+                            |  "deceased": {
+                            |     "field": "value3"
+                            |  }
+                            |}""".stripMargin)
+            )
+        )
+
+        val result  = Await.result(connector.allSettlors(utr),Duration.Inf)
+        result mustBe AllSettlors(
+          settlors = List(
+            Json.obj("field" -> "value1")
+          ),
+          settlorsCompany = List(
+            Json.obj("field" -> "value2")
+          ),
+          deceased = Some(Json.obj("field" -> "value3"))
+        )
+
+        application.stop()
+
+      }
+
+    }
 
     "playback data must" - {
 

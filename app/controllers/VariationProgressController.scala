@@ -18,11 +18,11 @@ package controllers
 
 import com.google.inject.Inject
 import config.FrontendAppConfig
-import connectors.TrustsStoreConnector
+import connectors.{TrustConnector, TrustsStoreConnector}
 import controllers.actions.AuthenticateForPlayback
 import models.pages.Tag
 import models.pages.Tag.InProgress
-import models.{CompletedMaintenanceTasks, Enumerable}
+import models.{AllSettlors, CompletedMaintenanceTasks, Enumerable}
 import navigation.DeclareNoChange
 import pages.UTRPage
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -40,7 +40,8 @@ class VariationProgressController @Inject()(
                                       view: VariationProgressView,
                                       val controllerComponents: MessagesControllerComponents,
                                       config: FrontendAppConfig,
-                                      storeConnector: TrustsStoreConnector
+                                      storeConnector: TrustsStoreConnector,
+                                      trustsConnector: TrustConnector
                                     )(implicit ec: ExecutionContext) extends DeclareNoChange with I18nSupport with Enumerable.Implicits {
 
   lazy val notYetAvailable : String = controllers.routes.FeatureNotAvailableController.onPageLoad().url
@@ -53,7 +54,7 @@ class VariationProgressController @Inject()(
     }
   }
 
-  def settlorsRouteEnabled(utr: String): String = {
+  def settlorsRouteEnabled(utr: String, allSettlors: AllSettlors): String = {
     if (config.maintainSettlorsEnabled) {
       config.maintainSettlorsUrl(utr)
     } else {
@@ -65,10 +66,13 @@ class VariationProgressController @Inject()(
     val isAbleToDeclare : Boolean = !(mandatory ::: other).exists(_.tag.contains(InProgress))
   }
 
-  private def taskList(tasks : CompletedMaintenanceTasks, utr: String) : TaskList = {
+  private def taskList(tasks : CompletedMaintenanceTasks,
+                       utr: String,
+                       allSettlors: AllSettlors) : TaskList = {
+
     val mandatorySections = List(
       Task(
-        Link(Settlors, settlorsRouteEnabled(utr)),
+        Link(Settlors, settlorsRouteEnabled(utr, allSettlors)),
         Some(Tag.tagFor(tasks.settlors, config.maintainSettlorsEnabled))
       ),
       Task(
@@ -96,26 +100,25 @@ class VariationProgressController @Inject()(
 
       request.userAnswers.get(UTRPage) match {
         case Some(utr) =>
+          for {
+            tasks <- storeConnector.getStatusOfTasks(utr)
+            allSettlors <- trustsConnector.allSettlors(utr)
+          } yield {
+            val sections = taskList(tasks, utr, allSettlors)
 
-          storeConnector.getStatusOfTasks(utr) map {
-            tasks =>
+            val next = if (request.user.affinityGroup == Agent) {
+              controllers.declaration.routes.AgencyRegisteredAddressUkYesNoController.onPageLoad().url
+            } else {
+              controllers.declaration.routes.IndividualDeclarationController.onPageLoad().url
+            }
 
-              val sections = taskList(tasks, utr)
-
-              val next = if (request.user.affinityGroup == Agent) {
-                controllers.declaration.routes.AgencyRegisteredAddressUkYesNoController.onPageLoad().url
-              } else {
-                controllers.declaration.routes.IndividualDeclarationController.onPageLoad().url
-              }
-
-              Ok(view(utr,
-                sections.mandatory,
-                sections.other,
-                request.user.affinityGroup,
-                next,
-                isAbleToDeclare = sections.isAbleToDeclare
-              ))
-
+            Ok(view(utr,
+              sections.mandatory,
+              sections.other,
+              request.user.affinityGroup,
+              next,
+              isAbleToDeclare = sections.isAbleToDeclare
+            ))
           }
         case _ =>
           Future.successful(Redirect(routes.UTRController.onPageLoad()))
