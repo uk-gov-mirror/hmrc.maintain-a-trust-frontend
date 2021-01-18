@@ -553,6 +553,11 @@ largeBeneficiaryAddress.checkYourAnswersLabel = What is {0}’s address?
 largeBeneficiaryUtr.checkYourAnswersLabel = What is {0}’s Unique Taxpayer Reference (UTR) number?
 largeBeneficiaryDescription.checkYourAnswersLabel = What is the description of the beneficiary?
 largeBeneficiaryNumberOfBeneficiaries.checkYourAnswersLabel = How many people are in this employment related beneficiary?
+largeBeneficiaryNumberOfBeneficiaries.over1 = 1 to 100
+largeBeneficiaryNumberOfBeneficiaries.over101 = 101 to 200
+largeBeneficiaryNumberOfBeneficiaries.over201 = 201 to 500
+largeBeneficiaryNumberOfBeneficiaries.over501 = 501 to 1,000
+largeBeneficiaryNumberOfBeneficiaries.over1001 = Over 1,001
 
 ### Other
 otherBeneficiaryDescription.checkYourAnswersLabel = What is the description of the beneficiary?
